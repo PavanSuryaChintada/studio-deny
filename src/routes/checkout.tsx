@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import type { UseFormRegister, FieldErrors } from "react-hook-form";
 import { useState, useEffect } from "react";
+import { checkRateLimit, recordAttempt, formatMs } from "@/lib/rateLimit";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -101,6 +102,11 @@ function Checkout() {
 
   const onSubmit = async (data: FormValues) => {
     if (items.length === 0) return toast.error("Your bag is empty");
+    const rl = checkRateLimit("checkout", 5, 30 * 60 * 1000, 30 * 60 * 1000);
+    if (!rl.allowed) {
+      toast.error(`Too many orders placed. Try again in ${formatMs(rl.lockedUntil! - Date.now())}.`);
+      return;
+    }
     setPaying(true);
     const address = {
       name: data.name, phone: data.phone, line1: data.line1,
@@ -124,6 +130,7 @@ function Checkout() {
               cod_advance_paid: true,
               cod_advance_amount: codAdvance,
             });
+            recordAttempt("checkout", 5, 30 * 60 * 1000, 30 * 60 * 1000);
             toast.success("COD order placed! Advance paid.");
             clear();
             navigate({ to: "/order/$id", params: { id: order.id } });
@@ -148,6 +155,7 @@ function Checkout() {
               discount,
               payment_method: "razorpay",
             });
+            recordAttempt("checkout", 5, 30 * 60 * 1000, 30 * 60 * 1000);
             toast.success("Payment successful");
             clear();
             navigate({ to: "/order/$id", params: { id: order.id } });

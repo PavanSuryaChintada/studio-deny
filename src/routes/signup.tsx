@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { checkRateLimit, recordAttempt, clearRateLimit, formatMs } from "@/lib/rateLimit";
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
@@ -23,7 +24,24 @@ function Signup() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [lockoutEnd, setLockoutEnd] = useState<number | null>(() => {
+    const check = checkRateLimit("signup", 5, 60 * 60 * 1000, 60 * 60 * 1000);
+    return check.lockedUntil;
+  });
+  const [remaining, setRemaining] = useState(0);
   const { register, handleSubmit, formState: { errors } } = useForm<V>({ resolver: zodResolver(schema) });
+
+  useEffect(() => {
+    if (!lockoutEnd) return;
+    const tick = () => {
+      const left = lockoutEnd - Date.now();
+      if (left <= 0) { setLockoutEnd(null); setRemaining(0); clearRateLimit("signup"); }
+      else setRemaining(left);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockoutEnd]);
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
@@ -53,18 +71,35 @@ function Signup() {
         <div className="flex-1 h-px bg-border" />
       </div>
 
+      {lockoutEnd && remaining > 0 && (
+        <div className="mb-4 border border-border/50 bg-surface/40 px-4 py-3 text-mono text-[11px] tracking-[0.15em] text-muted-foreground">
+          TOO MANY SIGNUPS — TRY AGAIN IN <span className="text-primary">{formatMs(remaining)}</span>
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit(async (d) => {
+          const rl = checkRateLimit("signup", 5, 60 * 60 * 1000, 60 * 60 * 1000);
+          if (!rl.allowed) {
+            setLockoutEnd(rl.lockedUntil);
+            toast.error("Too many signup attempts. Try again later.");
+            return;
+          }
           setLoading(true);
           try {
             await signup(d.email, d.password, d.name);
+            recordAttempt("signup", 5, 60 * 60 * 1000, 60 * 60 * 1000);
             toast.success("Account created! You can now log in.");
             navigate({ to: "/login" });
           } catch (err) {
             const msg = err instanceof Error ? err.message : "Signup failed";
+            recordAttempt("signup", 5, 60 * 60 * 1000, 60 * 60 * 1000);
+            const after = checkRateLimit("signup", 5, 60 * 60 * 1000, 60 * 60 * 1000);
+            if (!after.allowed) setLockoutEnd(after.lockedUntil);
             toast.error(msg);
+          } finally {
+            setLoading(false);
           }
-          finally { setLoading(false); }
         })}
         className="space-y-4"
       >
@@ -83,8 +118,8 @@ function Signup() {
           <input {...register("password")} type="password" className="mt-1 w-full bg-surface border border-border h-11 px-3 focus:border-primary outline-none" />
           {errors.password && <p className="text-xs text-primary mt-1">{errors.password.message}</p>}
         </div>
-        <button disabled={loading} className="w-full bg-primary text-primary-foreground font-bold tracking-[0.2em] text-mono text-xs h-12 hover:glow-primary disabled:opacity-50">
-          {loading ? "..." : "CREATE ACCOUNT"}
+        <button disabled={loading || !!lockoutEnd} className="w-full bg-primary text-primary-foreground font-bold tracking-[0.2em] text-mono text-xs h-12 hover:glow-primary disabled:opacity-50">
+          {loading ? "..." : lockoutEnd ? "LOCKED" : "CREATE ACCOUNT"}
         </button>
       </form>
     </section>
