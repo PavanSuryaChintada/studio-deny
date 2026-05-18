@@ -667,7 +667,7 @@ function Index() {
               "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=400&q=80",
               "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
               "https://images.unsplash.com/photo-1551537482-f2075a1d41f2?w=400&q=80",
-              "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
+              "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=400&q=80",
             ].map((src, idx) => (
               <motion.a
                 key={src}
