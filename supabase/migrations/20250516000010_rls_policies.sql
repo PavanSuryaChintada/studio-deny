@@ -2,6 +2,7 @@
 -- Migration: Row Level Security policies
 -- All frontend queries use the anon key with RLS.
 -- Service key (used only in API routes) bypasses RLS.
+-- Idempotent: all CREATE POLICY wrapped in DO blocks.
 -- ============================================================
 
 -- ────────────────────────────────────────────────────────────
@@ -30,52 +31,70 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "profiles: own row" ON profiles
-  FOR ALL USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "profiles: own row" ON profiles
+    FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "profiles: admins read all" ON profiles
-  FOR SELECT USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "profiles: admins read all" ON profiles
+    FOR SELECT USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- user_roles
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "user_roles: read own" ON user_roles
-  FOR SELECT USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "user_roles: read own" ON user_roles
+    FOR SELECT USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "user_roles: admins manage" ON user_roles
-  FOR ALL USING (is_admin());
+DO $$ BEGIN
+  CREATE POLICY "user_roles: admins manage" ON user_roles
+    FOR ALL USING (is_admin());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- addresses
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE addresses ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "addresses: own rows" ON addresses
-  FOR ALL USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "addresses: own rows" ON addresses
+    FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "addresses: admins read" ON addresses
-  FOR SELECT USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "addresses: admins read" ON addresses
+    FOR SELECT USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- product_variants (public read, admin write)
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE product_variants ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "variants: public read" ON product_variants
-  FOR SELECT USING (true);
+DO $$ BEGIN
+  CREATE POLICY "variants: public read" ON product_variants
+    FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "variants: admins write" ON product_variants
-  FOR ALL USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "variants: admins write" ON product_variants
+    FOR ALL USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- order_items
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "order_items: admins all" ON order_items
-  FOR ALL USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "order_items: admins all" ON order_items
+    FOR ALL USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- carts + cart_items
@@ -83,21 +102,27 @@ CREATE POLICY "order_items: admins all" ON order_items
 ALTER TABLE carts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "carts: own" ON carts
-  FOR ALL USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "carts: own" ON carts
+    FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "cart_items: own via cart" ON cart_items
-  FOR ALL USING (
-    cart_id IN (SELECT id FROM carts WHERE user_id = auth.uid())
-  );
+DO $$ BEGIN
+  CREATE POLICY "cart_items: own via cart" ON cart_items
+    FOR ALL USING (
+      cart_id IN (SELECT id FROM carts WHERE user_id = auth.uid())
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- wishlist_items
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE wishlist_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "wishlist: own rows" ON wishlist_items
-  FOR ALL USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "wishlist: own rows" ON wishlist_items
+    FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- loyalty_balances + loyalty_transactions
@@ -105,17 +130,25 @@ CREATE POLICY "wishlist: own rows" ON wishlist_items
 ALTER TABLE loyalty_balances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loyalty_transactions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "loyalty_balances: read own" ON loyalty_balances
-  FOR SELECT USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "loyalty_balances: read own" ON loyalty_balances
+    FOR SELECT USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "loyalty_balances: admins all" ON loyalty_balances
-  FOR ALL USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "loyalty_balances: admins all" ON loyalty_balances
+    FOR ALL USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "loyalty_transactions: read own" ON loyalty_transactions
-  FOR SELECT USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "loyalty_transactions: read own" ON loyalty_transactions
+    FOR SELECT USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "loyalty_transactions: admins all" ON loyalty_transactions
-  FOR ALL USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "loyalty_transactions: admins all" ON loyalty_transactions
+    FOR ALL USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- CMS tables — public read, admin write
@@ -138,14 +171,18 @@ BEGIN
     'announcement_bars','website_sections','navigation_menus','faq_items',
     'testimonials','media_assets','brand_settings','theme_settings','seo_settings'
   ] LOOP
-    EXECUTE format(
-      'CREATE POLICY "cms_%1$s_public_read" ON %1$s FOR SELECT USING (true)',
-      t
-    );
-    EXECUTE format(
-      'CREATE POLICY "cms_%1$s_admin_write" ON %1$s FOR ALL USING (is_admin_or_staff())',
-      t
-    );
+    BEGIN
+      EXECUTE format(
+        'CREATE POLICY "cms_%1$s_public_read" ON %1$s FOR SELECT USING (true)',
+        t
+      );
+    EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN
+      EXECUTE format(
+        'CREATE POLICY "cms_%1$s_admin_write" ON %1$s FOR ALL USING (is_admin_or_staff())',
+        t
+      );
+    EXCEPTION WHEN duplicate_object THEN NULL; END;
   END LOOP;
 END $$;
 
@@ -154,8 +191,13 @@ END $$;
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "settings: public read"  ON settings FOR SELECT USING (true);
-CREATE POLICY "settings: admins write" ON settings FOR ALL USING (is_admin());
+DO $$ BEGIN
+  CREATE POLICY "settings: public read" ON settings FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "settings: admins write" ON settings FOR ALL USING (is_admin());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- notification tables — admin only
@@ -174,10 +216,12 @@ BEGIN
     'notification_templates','notification_queue','whatsapp_logs',
     'marketing_campaigns','admin_notifications'
   ] LOOP
-    EXECUTE format(
-      'CREATE POLICY "notif_%1$s_admin" ON %1$s FOR ALL USING (is_admin_or_staff())',
-      t
-    );
+    BEGIN
+      EXECUTE format(
+        'CREATE POLICY "notif_%1$s_admin" ON %1$s FOR ALL USING (is_admin_or_staff())',
+        t
+      );
+    EXCEPTION WHEN duplicate_object THEN NULL; END;
   END LOOP;
 END $$;
 
@@ -186,19 +230,28 @@ END $$;
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE customer_notification_preferences ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "cust_notif_pref: own" ON customer_notification_preferences
-  FOR ALL USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "cust_notif_pref: own" ON customer_notification_preferences
+    FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "cust_notif_pref: admins read" ON customer_notification_preferences
-  FOR SELECT USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "cust_notif_pref: admins read" ON customer_notification_preferences
+    FOR SELECT USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- coupons — public read (anon can validate), admin write
 -- ────────────────────────────────────────────────────────────
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "coupons: public read"  ON coupons FOR SELECT USING (true);
-CREATE POLICY "coupons: admins write" ON coupons FOR ALL USING (is_admin());
+DO $$ BEGIN
+  CREATE POLICY "coupons: public read" ON coupons FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "coupons: admins write" ON coupons FOR ALL USING (is_admin());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- rate_limits — service key only (no anon access)
@@ -212,5 +265,12 @@ ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE abandoned_carts    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE content_versions   ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "abandoned_carts: admin"   ON abandoned_carts   FOR ALL USING (is_admin_or_staff());
-CREATE POLICY "content_versions: admin"  ON content_versions  FOR ALL USING (is_admin_or_staff());
+DO $$ BEGIN
+  CREATE POLICY "abandoned_carts: admin" ON abandoned_carts
+    FOR ALL USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "content_versions: admin" ON content_versions
+    FOR ALL USING (is_admin_or_staff());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
