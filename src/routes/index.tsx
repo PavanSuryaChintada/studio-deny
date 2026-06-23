@@ -982,8 +982,8 @@ function Index() {
                       desc: `Each point = ₹${ls.rupeesPerPoint} off at checkout. No expiry. No minimum. Stack with tier discounts.`,
                     },
                   ].map((item) => (
-                    <div key={item.step} className="flex gap-5 border border-white/20 bg-white/[0.03] p-5 hover:border-white/35 transition-colors group">
-                      <div className="text-display text-[2.5rem] leading-none text-white/25 group-hover:text-white/45 transition-colors shrink-0 w-12">
+                    <div key={item.step} className="flex gap-5 border border-white/30 bg-white/[0.05] p-5 hover:border-white/50 transition-colors group">
+                      <div className="text-display text-[2.5rem] leading-none text-white/50 group-hover:text-white/80 transition-colors shrink-0 w-12">
                         {item.step}
                       </div>
                       <div>
@@ -996,14 +996,14 @@ function Index() {
                   {/* Tier strip */}
                   <div className="grid grid-cols-4 gap-1.5 pt-2">
                     {[
-                      { name: "ROOKIE", pts: "0 pts", style: "border-white/20 bg-white/[0.04]" },
-                      { name: "RUNNER", pts: "1,000 pts", style: "border-blue-400/50 bg-blue-500/8" },
-                      { name: "RIOT", pts: "3,000 pts", style: "border-primary/50 bg-primary/8" },
-                      { name: "LEGEND", pts: "8,000 pts", style: "border-primary/60 bg-primary/10" },
+                      { name: "ROOKIE", pts: "0 pts", style: "border-white/30 bg-white/[0.07]" },
+                      { name: "RUNNER", pts: "1,000 pts", style: "border-blue-400/70 bg-blue-500/15" },
+                      { name: "RIOT", pts: "3,000 pts", style: "border-primary/70 bg-primary/15" },
+                      { name: "LEGEND", pts: "8,000 pts", style: "border-primary/90 bg-primary/20" },
                     ].map((t) => (
                       <div key={t.name} className={`border ${t.style} p-3 text-center`}>
-                        <div className="text-mono text-[9px] tracking-widest text-white/70 mb-1">{t.name}</div>
-                        <div className="text-mono text-[8px] text-white/55">{t.pts}</div>
+                        <div className="text-mono text-[9px] tracking-widest text-white/90 mb-1">{t.name}</div>
+                        <div className="text-mono text-[8px] text-white/75">{t.pts}</div>
                       </div>
                     ))}
                   </div>

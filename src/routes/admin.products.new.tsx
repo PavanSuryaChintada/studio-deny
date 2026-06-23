@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { upsertProduct, type Product } from "@/lib/productsStore";
 import { listCategories, listBrands } from "@/lib/catalog";
 import { uploadToCloudinary } from "@/lib/cloudinary";
@@ -30,14 +30,20 @@ export function ProductForm({
   initial?: Product;
   onSave: (p: Product) => Promise<void>;
 }) {
-  const cats = listCategories();
-  const brands = listBrands();
+  const [cats, setCats] = useState(() => listCategories());
+  const [brands, setBrands] = useState(() => listBrands());
+
+  useEffect(() => {
+    setCats(listCategories());
+    setBrands(listBrands());
+  }, []);
+
   const [p, setP] = useState<Product>(
     initial ?? {
       slug: "",
       name: "",
-      category: cats[0]?.name ?? "Tops",
-      brand: brands[0]?.name,
+      category: listCategories()[0]?.name ?? "Tops",
+      brand: listBrands()[0]?.name,
       price: 0,
       image: "",
       hoverImage: "",
@@ -256,19 +262,17 @@ export function ProductForm({
                 if (f) handleImageUpload(f, "image", setUploadingImg);
               }}
             />
-            <button
-              type="button"
-              onClick={() => imgRef.current?.click()}
-              disabled={uploadingImg}
-              className="border border-border h-10 px-3 text-mono text-[10px] tracking-widest hover:border-primary hover:text-primary inline-flex items-center gap-2 disabled:opacity-50"
-            >
-              {uploadingImg ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Upload className="size-3" />
-              )}
-              UPLOAD
-            </button>
+            {!p.image && (
+              <button
+                type="button"
+                onClick={() => imgRef.current?.click()}
+                disabled={uploadingImg}
+                className="border border-border h-10 px-3 text-mono text-[10px] tracking-widest hover:border-primary hover:text-primary inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                {uploadingImg ? <Loader2 className="size-3 animate-spin" /> : <Upload className="size-3" />}
+                UPLOAD
+              </button>
+            )}
           </div>
         </Field>
 
@@ -310,19 +314,17 @@ export function ProductForm({
                 if (f) handleImageUpload(f, "hoverImage", setUploadingHover);
               }}
             />
-            <button
-              type="button"
-              onClick={() => hoverRef.current?.click()}
-              disabled={uploadingHover}
-              className="border border-border h-10 px-3 text-mono text-[10px] tracking-widest hover:border-primary hover:text-primary inline-flex items-center gap-2 disabled:opacity-50"
-            >
-              {uploadingHover ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Upload className="size-3" />
-              )}
-              UPLOAD
-            </button>
+            {!p.hoverImage && (
+              <button
+                type="button"
+                onClick={() => hoverRef.current?.click()}
+                disabled={uploadingHover}
+                className="border border-border h-10 px-3 text-mono text-[10px] tracking-widest hover:border-primary hover:text-primary inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                {uploadingHover ? <Loader2 className="size-3 animate-spin" /> : <Upload className="size-3" />}
+                UPLOAD
+              </button>
+            )}
           </div>
         </Field>
 
