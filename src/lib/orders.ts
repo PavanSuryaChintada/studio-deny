@@ -39,10 +39,21 @@ export type Order = {
 
 const KEY = "sd_orders";
 
+// Orders contain shipping addresses and payment IDs — store in sessionStorage
+// so data is cleared when the browser/tab closes and isn't accessible cross-session.
+function ssGet(key: string): string | null {
+  try { return typeof window !== "undefined" ? window.sessionStorage.getItem(key) : null; }
+  catch { return null; }
+}
+function ssSet(key: string, value: string): void {
+  try { if (typeof window !== "undefined") window.sessionStorage.setItem(key, value); }
+  catch { /* sessionStorage unavailable (private mode quota, etc.) — fail silently */ }
+}
+
 const read = (): Order[] => {
   if (typeof window === "undefined") return [];
   try {
-    const raw: any[] = JSON.parse(localStorage.getItem(KEY) || "[]");
+    const raw: any[] = JSON.parse(ssGet(KEY) || "[]");
     return raw.map((o) => ({
       invoiceNo: o.invoiceNo ?? "INV-" + o.id,
       order_number: o.order_number ?? o.id,
@@ -55,9 +66,7 @@ const read = (): Order[] => {
     }));
   } catch { return []; }
 };
-const write = (orders: Order[]) => {
-  if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(orders));
-};
+const write = (orders: Order[]) => ssSet(KEY, JSON.stringify(orders));
 
 export const listOrders = read;
 export const ordersFor = (email: string) => read().filter((o) => o.userEmail === email);
